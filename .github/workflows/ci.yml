@@ -19,6 +19,8 @@ jobs:
           pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
           pip install -e ".[dev]" onnx==1.17.0 onnxruntime==1.20.1
       - run: ruff check medseg tests
-      - run: pytest -q
+      - run: pytest -q -rs
+        env:
+          REQUIRE_TORCH: "1"
       - name: Check the web app parses
         run: node --check web/app.js

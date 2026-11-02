@@ -1,11 +1,15 @@
 """Model, training, evaluation and ONNX export on a tiny synthetic dataset (needs PyTorch; runs in CI)."""
 
 import json
+import os
 
 import numpy as np
 import pytest
 
-torch = pytest.importorskip("torch")
+if os.environ.get("REQUIRE_TORCH"):  # CI sets this so these tests can never be skipped silently
+    import torch
+else:
+    torch = pytest.importorskip("torch")
 
 from medseg.data import preprocess  # noqa: E402
 from medseg.evaluate import evaluate, write_samples  # noqa: E402
@@ -57,7 +61,8 @@ def test_evaluate_and_samples(trained):
 
 
 def test_onnx_export_matches_pytorch(trained, tmp_path):
-    pytest.importorskip("onnxruntime")
+    if not os.environ.get("REQUIRE_TORCH"):
+        pytest.importorskip("onnxruntime")
     from medseg.export import export, verify
 
     tmp, proc, _ = trained
