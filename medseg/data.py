@@ -37,8 +37,9 @@ def resize_slice(img: np.ndarray, size: int, mask: bool = False) -> np.ndarray:
 
 
 def to_display(axial: np.ndarray) -> np.ndarray:
-    """NIfTI arrays are (x, y); rotate to the radiology view (anterior up, patient left on image right)."""
-    return np.rot90(axial)
+    """NIfTI arrays are (x, y). Rotate so anterior is up, then mirror so the patient's left is on the image right:
+    the radiology convention, so the spleen (patient's left) appears on the right of the screen."""
+    return np.fliplr(np.rot90(axial))
 
 
 def patient_split(case_ids: list[str], seed: int = 0, val: float = 0.15, test: float = 0.15) -> dict[str, list[str]]:

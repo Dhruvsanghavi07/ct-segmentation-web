@@ -25,7 +25,7 @@ All of it runs in one GitHub Actions workflow (`.github/workflows/train.yml`) on
 
 | Step | File | Details |
 |---|---|---|
-| Data | `medseg/data.py` | Patient-level split (adjacent slices are near-duplicates, so a slice-level split leaks), soft-tissue window [-160, 240] HU, slices resized to 128×128. Training keeps every slice with spleen plus 25% of empty slices. |
+| Data | `medseg/data.py` | Patient-level split (adjacent slices are near-duplicates, so a slice-level split leaks), soft-tissue window [-160, 240] HU, radiology orientation (patient's left on the image right), slices resized to 128×128. Training keeps every slice with spleen plus 25% of empty slices. |
 | Model | `medseg/model.py` | 2D U-Net, 4 levels (16 to 128 channels), batch norm, transposed-conv upsampling. Only operators that ONNX Runtime Web supports. |
 | Training | `medseg/train.py` | Cross-entropy + soft Dice loss (the spleen is a few percent of each slice), AdamW, cosine schedule, anatomy-safe augmentation (shifts and intensity jitter, no left-right flips), early stopping on validation 3D Dice. |
 | Evaluation | `medseg/evaluate.py`, `medseg/metrics.py` | Per-patient 3D Dice and HD95 in millimetres, with and without largest-connected-component post-processing. |

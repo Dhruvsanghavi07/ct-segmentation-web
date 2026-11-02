@@ -99,6 +99,10 @@ def test_preprocess_end_to_end(tmp_path):
     assert tr["images"][tr["masks"] == 1].mean() > 120 and tr["images"][tr["masks"] == 0].mean() < 30
 
 
-def test_display_orientation_is_a_rotation():
-    a = np.arange(6).reshape(2, 3)
-    assert to_display(a).shape == (3, 2)
+def test_display_orientation_follows_radiology_convention():
+    # axial slice indexed (x, y) in RAS orientation: x increases toward the patient's right, y toward anterior
+    a = np.zeros((4, 3))
+    a[0, 2] = 1  # far patient-left, far anterior
+    out = to_display(a)
+    assert out.shape == (3, 4)
+    assert out[0, 3] == 1  # anterior at the top, patient's left on the image right
