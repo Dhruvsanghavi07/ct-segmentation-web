@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.venv/
+data/
+runs/
+web/model.onnx
+web/samples/
+web/metrics.json
+.DS_Store
