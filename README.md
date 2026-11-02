@@ -7,6 +7,30 @@
 **Live demo: https://dhruvsanghavi07.github.io/ct-segmentation-web/** · pick a held-out test patient, scroll through the spleen, and compare the model's prediction with the radiologist's label. No server is involved and no image leaves the browser.
 
 <!-- RESULTS -->
+## Results (release [model-v1.2](https://github.com/Dhruvsanghavi07/ct-segmentation-web/releases/tag/model-v1.2), 6 held-out test patients)
+
+| Metric | Value |
+|---|---|
+| 3D Dice, mean ± std | 0.952 ± 0.021 |
+| 3D Dice without post-processing | 0.930 |
+| HD95, median | 3.5 mm |
+| Validation 3D Dice (6 patients) | 0.963 |
+| Training | 35 epochs, 1,137 slices, 36.1 min on a CI CPU |
+| Parameters | 1,942,306 |
+| ONNX model | 7.8 MB, 10.3 ms per slice (onnxruntime CPU) |
+| ONNX vs PyTorch | max logit difference 1.1e-05, class agreement 100.0000% |
+
+| Test patient | Dice | Dice (raw) | HD95 (mm) |
+|---|---|---|---|
+| spleen_10 | 0.967 | 0.967 | 3.9 |
+| spleen_24 | 0.934 | 0.803 | 2.9 |
+| spleen_27 | 0.912 | 0.909 | 16.0 |
+| spleen_32 | 0.968 | 0.968 | 3.6 |
+| spleen_49 | 0.963 | 0.963 | 3.4 |
+| spleen_61 | 0.970 | 0.970 | 3.1 |
+
+Dice and HD95 are computed per patient in 3D at the model's 128×128 in-plane resolution. Post-processing keeps the largest connected component, which matters most for spleen_24: disconnected false-positive regions pull its raw Dice down to 0.803, and removing them brings it to 0.934. spleen_27 is the hardest case (Dice 0.912, HD95 16 mm). With only six test patients, treat the mean as a rough estimate.
+<!-- /RESULTS -->
 
 ## Pipeline
 
