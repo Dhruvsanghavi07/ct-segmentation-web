@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spleen CT Segmentation in the Browser</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1>Spleen CT Segmentation in the Browser</h1>
+    <p class="muted">A U-Net trained on abdominal CT segments the spleen on held-out patients it has never seen.
+      The model runs on your device with ONNX Runtime Web: no server, and no image ever leaves your browser.</p>
+  </header>
+
+  <section class="kpis" id="kpis" aria-label="Held-out test results"></section>
+
+  <section class="viewer">
+    <div class="canvas-wrap">
+      <canvas id="view" width="512" height="512" aria-label="CT slice with predicted spleen overlay"></canvas>
+      <div class="legend"><span class="sw pred"></span>Model prediction <span class="sw gt"></span>Radiologist label</div>
+    </div>
+    <div class="controls">
+      <label for="case">Test patient</label>
+      <select id="case"></select>
+      <label for="slice">Slice through the spleen</label>
+      <input id="slice" type="range" min="0" max="0" value="0">
+      <div class="row">
+        <label><input type="checkbox" id="showPred" checked> Prediction</label>
+        <label><input type="checkbox" id="showGT" checked> Label outline</label>
+      </div>
+      <dl class="stats">
+        <dt>Slice Dice</dt><dd id="sliceDice">–</dd>
+        <dt>Inference time</dt><dd id="latency">–</dd>
+        <dt>Backend</dt><dd id="backend">–</dd>
+      </dl>
+      <label for="upload" class="upload">Or try your own axial CT slice (PNG/JPG, soft-tissue window)</label>
+      <input id="upload" type="file" accept="image/png,image/jpeg">
+      <p id="status" class="muted" role="status">Loading model…</p>
+    </div>
+  </section>
+
+  <section class="notes">
+    <h2>How it was built</h2>
+    <p>Data: 41 labeled CT volumes from the Medical Segmentation Decathlon (Task 09, spleen), split by
+      <b>patient</b> so no test patient's slices are seen in training. Training, evaluation, ONNX export and
+      deployment of this page all run in GitHub Actions. Metrics are per-patient 3D Dice and HD95 on the
+      held-out patients. <a href="https://github.com/Dhruvsanghavi07/ct-segmentation-web">Code and model card on GitHub</a>.</p>
+    <p class="muted"><b>Research demo only, not a medical device.</b> Not for diagnosis or clinical use.</p>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
