@@ -1,0 +1,90 @@
+name: Train, evaluate and deploy
+
+# Runs the full pipeline on GitHub's CPU runners: download the data, preprocess, train, evaluate on
+# held-out patients, export to ONNX (checked against PyTorch), publish the model as a GitHub Release
+# and deploy the browser demo to GitHub Pages. Start it from the Actions tab ("Run workflow").
+on:
+  workflow_dispatch:
+    inputs:
+      epochs:
+        description: Maximum epochs
+        default: "40"
+      max_minutes:
+        description: Training time budget in minutes
+        default: "150"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: train
+  cancel-in-progress: false
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install (CPU-only PyTorch)
+        run: |
+          pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install -e . onnx==1.17.0 onnxruntime==1.20.1
+
+      - name: Cache the dataset
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: data/Task09_Spleen
+          key: msd-task09-spleen-v1
+      - name: Download MSD Task09 Spleen (1.5 GB, CC-BY-SA 4.0)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p data
+          curl -fsSL --retry 3 -o data/spleen.tar "$(python -c 'from medseg.data import URL; print(URL)')"
+          sha256sum data/spleen.tar
+          tar -xf data/spleen.tar -C data
+          rm data/spleen.tar
+
+      - name: Preprocess (patient-level split)
+        run: python -m medseg.data data/Task09_Spleen --out data/processed
+      - name: Train
+        run: python -m medseg.train data/processed --out runs/latest --epochs ${{ inputs.epochs }} --max-minutes ${{ inputs.max_minutes }}
+      - name: Evaluate on held-out patients and write demo samples
+        run: python -m medseg.evaluate data/processed runs/latest/best.pt --out runs/latest --samples web/samples
+      - name: Export to ONNX and verify against PyTorch
+        run: python -m medseg.export runs/latest/best.pt data/processed --out web/model.onnx --report runs/latest/export.json
+      - name: Report
+        run: |
+          python -m medseg.report runs/latest --web web --markdown runs/latest/SUMMARY.md
+          cp data/processed/split.json runs/latest/
+          cat runs/latest/SUMMARY.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run-${{ github.run_number }}
+          path: |
+            runs/latest
+            web/model.onnx
+      - name: Publish the model as a GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "model-v1.${{ github.run_number }}" web/model.onnx runs/latest/*.json \
+            --title "Model v1.${{ github.run_number }}" --notes-file runs/latest/SUMMARY.md
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: deploy
+        uses: actions/deploy-pages@v4
